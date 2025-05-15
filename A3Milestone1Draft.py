@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import re
 from collections import defaultdict
 from tqdm import tqdm
+import hashlib
 
 
 
@@ -19,6 +20,11 @@ def main():
     invertedIndex = defaultdict(dict)  
     filepaths = glob.glob("**/*.json", recursive=True)
 
+    #hashtable stores 1st file path that generates a particular hash
+    hashTable = {}
+    dupReport = defaultdict(list)
+
+
     for filepath in tqdm(filepaths, desc="Processing files"): # I changed this to search for all subdirectories instead of 2 loops
         with open(filepath, 'r') as f:
             data = json.load(f)
@@ -31,6 +37,17 @@ def main():
 
             # get text?
             text = soup.get_text()
+
+            #standardizes all whitespace (newlines, page breaks, multiple spaces) into single spaces
+            standardizedText = " ".join(text.split())
+            #hashes the file, if it already exists in the table, add file path to the dupe report
+            #otherwise record it as an original file
+            hashedPage = hashlib.sha256(standardizedText.encode("utf-8")).hexdigest()
+            if hashedPage in hashTable:
+                dupReport[hashTable[hashedPage]].append(filepath)
+            else:
+                hashTable[hashedPage] = filepath
+
 
             # use one of our tokenizers (or make some function for tokenizing)
             tokens = tokenize(text)
@@ -60,8 +77,19 @@ def main():
     with open("../inverted_index.json", "w") as f:
         json.dump(regular_dict, f, indent=2)
 
+    
+    #only include files that have a value (duplicate) for key (original file)
+    dupDict = {}
+    for k, v in dupReport.items():
+        if v:
+            dupDict[k] = v
 
-
+    #outputs new file listing all dups
+    with open("../exact_duplicates.json", "w") as f:
+        json.dump(dupDict, f, indent=2)
+    print(f"exact_duplicates.json has {len(dupDict)} entries")
+    print("saved exact_duplicates.json to", os.path.abspath("../exact_duplicates.json"))
+    
     #   if len(invertedIndex) > (some threshold to where its too big)
     #       sort keys alphabetically
     #       offload inverted index into a file somehow (could make a seperate folder)
