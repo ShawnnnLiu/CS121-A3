@@ -35,8 +35,7 @@ def main():
 
             soup = BeautifulSoup(htmlContent, 'html.parser')  # typo fix
 
-            # get text?
-            text = soup.get_text()
+            text = soup.get_text() # get text from html content
 
             #standardizes all whitespace (newlines, page breaks, multiple spaces) into single spaces
             standardizedText = " ".join(text.split())
@@ -55,7 +54,7 @@ def main():
             # how to stem the words?
             # TBI
 
-            # For word in list
+            # For word in tokens
             #   if word not in invertedIndex
             #       add to dictionary and value is documentNumber
             # documentCounter += 1
@@ -77,6 +76,7 @@ def main():
     with open("../inverted_index.json", "w") as f:
         json.dump(regular_dict, f, indent=2)
 
+
     
     #only include files that have a value (duplicate) for key (original file)
     dupDict = {}
@@ -90,13 +90,14 @@ def main():
     print(f"exact_duplicates.json has {len(dupDict)} entries")
     print("saved exact_duplicates.json to", os.path.abspath("../exact_duplicates.json"))
     
+
     #   if len(invertedIndex) > (some threshold to where its too big)
-    #       sort keys alphabetically
-    #       offload inverted index into a file somehow (could make a seperate folder)
+    #       # next 2 lines sorts keys alphabetically
+    #       newList = sorted(myDict.items()) 
+    #       alphabeticallySorted = dict(newList)
+    #       TBI: offload inverted index into a file somehow (could make a seperate folder)
     #   go to next file
-
-# at some point, merge all indexes together
-
-# extra credit? somehow eliminate exact duplicate pages? do we bother?
+    
+# at some point, merge all indexes together into a file
 
 main()
