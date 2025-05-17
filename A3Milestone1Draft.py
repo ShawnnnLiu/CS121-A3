@@ -6,6 +6,8 @@ import re
 from collections import defaultdict
 from tqdm import tqdm
 import hashlib
+from nltk.stem import PorterStemmer
+from collections import Counter
 
 
 
@@ -24,8 +26,14 @@ def main():
     hashTable = {}
     dupReport = defaultdict(list)
 
+    stemmer = PorterStemmer()
 
-    for filepath in tqdm(filepaths, desc="Processing files"): # I changed this to search for all subdirectories instead of 2 loops
+
+
+    doc_id_table = {}  # maps file path → int ID
+
+    for doc_id, filepath in enumerate(tqdm(filepaths, desc="Processing files")): # I changed this to search for all subdirectories instead of 2 loops
+        doc_id_table[filepath] = doc_id
         with open(filepath, 'r') as f:
             data = json.load(f)
             htmlContent = data['content'] # does this look for content tag in json file to find html? or is it htmlContent = data['html']
@@ -49,10 +57,11 @@ def main():
 
 
             # use one of our tokenizers (or make some function for tokenizing)
-            tokens = tokenize(text)
             # we have a list of words after tokenizing
             # how to stem the words?
-            # TBI
+
+            tokens = [stemmer.stem(token) for token in tokenize(text)]
+            
 
             # For word in tokens
             #   if word not in invertedIndex
@@ -62,10 +71,10 @@ def main():
 
             # Inside the file loop:
             for word in tokens:
-                if filepath not in invertedIndex[word]:
-                    invertedIndex[word][filepath] = 1
+                if doc_id not in invertedIndex[word]:
+                    invertedIndex[word][doc_id] = 1
                 else:
-                    invertedIndex[word][filepath] += 1
+                    invertedIndex[word][doc_id] += 1
 
             
                     
@@ -89,7 +98,60 @@ def main():
         json.dump(dupDict, f, indent=2)
     print(f"exact_duplicates.json has {len(dupDict)} entries")
     print("saved exact_duplicates.json to", os.path.abspath("../exact_duplicates.json"))
-    
+
+    with open("../doc_id_table.json", "w") as f:
+        json.dump(doc_id_table, f, indent=2)
+
+
+    num_docs = len(filepaths)
+    num_tokens = len(invertedIndex)
+    index_size_kb = os.path.getsize("../inverted_index.json") / 1024
+
+    report_text = (
+        "--- M1 Report Summary ---\n"
+        f"Indexed documents: {num_docs}\n"
+        f"Unique tokens: {num_tokens}\n"
+        f"Index file size: {index_size_kb:.2f} KB\n"
+    )
+
+    with open("../m1_report.txt", "w") as f:
+        f.write(report_text)
+
+    print("Saved M1 stats")
+
+    total_tokens = 0
+    for postings in invertedIndex.values():
+        total_tokens += sum(postings.values())
+    avg_tokens_per_doc = total_tokens / len(filepaths)
+
+    # top 10 most frequent tokens (total across all docs)
+    token_freq = Counter()
+    for token, postings in invertedIndex.items():
+        token_freq[token] = sum(postings.values())
+    top_10_tokens = token_freq.most_common(10)
+
+    # dupe count
+    duplicate_doc_count = sum(len(v) for v in dupDict.values())
+
+    # avg token frequency
+    avg_tf_per_doc = total_tokens / len(filepaths)
+
+    # --- Output or save analytics ---
+    extra_stats = (
+        f"Average tokens per document: {avg_tokens_per_doc:.2f}\n"
+        f"Average token frequency per document: {avg_tf_per_doc:.2f}\n"
+        f"Duplicate document count: {duplicate_doc_count}\n"
+        "\nTop 10 most frequent tokens:\n"
+    )
+    for token, freq in top_10_tokens:
+        extra_stats += f"{token}: {freq}\n"
+
+    # Save to file
+    with open("../m1_extra_analytics.txt", "w") as f:
+        f.write(extra_stats)
+
+
+        
 
     #   if len(invertedIndex) > (some threshold to where its too big)
     #       # next 2 lines sorts keys alphabetically
