@@ -19,6 +19,8 @@ def main():
     os.chdir("DEV")
 
     # initialize the inverted index, this initialization automatically creates a new empty dict if you access a key that does not exist
+    # this is a double dictionary, maps words to a dictionary of docs, 
+    # which maps to the frequency of the word in that doc. (number of occurences in that doc)
     invertedIndex = defaultdict(dict)  
     filepaths = glob.glob("**/*.json", recursive=True)
 
@@ -28,15 +30,14 @@ def main():
 
     stemmer = PorterStemmer()
 
-
-
     doc_id_table = {}  # maps file path → int ID
 
+    # enumerate each file/doc starting at doc_id = 0, first file maps to 0, etc
     for doc_id, filepath in enumerate(tqdm(filepaths, desc="Processing files")): # I changed this to search for all subdirectories instead of 2 loops
         doc_id_table[filepath] = doc_id
         with open(filepath, 'r') as f:
             data = json.load(f)
-            htmlContent = data['content'] # does this look for content tag in json file to find html? or is it htmlContent = data['html']
+            htmlContent = data['content'] # obtain content to parse with data['content']
             if not isinstance(htmlContent, str):
                 print(f"Skipping non-str content in {filepath}: type={type(htmlContent)}")
                 continue
@@ -56,19 +57,12 @@ def main():
                 hashTable[hashedPage] = filepath
 
 
-            # use one of our tokenizers (or make some function for tokenizing)
-            # we have a list of words after tokenizing
-            # how to stem the words?
-
             tokens = [stemmer.stem(token) for token in tokenize(text)]
-            
 
-            # For word in tokens
-            #   if word not in invertedIndex
-            #       add to dictionary and value is documentNumber
-            # documentCounter += 1
-
-
+            # Count word frequencies, add doc_id to word and track occurences of that
+            # word for that specifc doc_id if its not in outer dict.
+            # If word isn't in index, it will be added along with tracking frequency of
+            # the word in each document.
             # Inside the file loop:
             for word in tokens:
                 if doc_id not in invertedIndex[word]:
@@ -119,6 +113,8 @@ def main():
 
     print("Saved M1 stats")
 
+    # invertedIndex.values() gets dict for doc_id to word frequency
+    # postings.values() gets the frequency of the token in each document
     total_tokens = 0
     for postings in invertedIndex.values():
         total_tokens += sum(postings.values())
@@ -150,8 +146,6 @@ def main():
     with open("../m1_extra_analytics.txt", "w") as f:
         f.write(extra_stats)
 
-
-        
 
     #   if len(invertedIndex) > (some threshold to where its too big)
     #       # next 2 lines sorts keys alphabetically
