@@ -1,44 +1,99 @@
 import json
 import re
+from nltk.stem import PorterStemmer
 
 def tokenize(text):
     return re.findall(r'\b\w+\b', text.lower())  # split into lowercase words
 
+
+
+
 def main():
+    # load the files first, moved to start of process for a cleaner look
+    with open("inverted_index.json", "r") as f:
+        inverted_index = json.load(f)
+
+    with open("doc_id_table.json", "r") as f:
+        doc_id_table = json.load(f)
+        id_to_doc = {v: k for k, v in doc_id_table.items()}
+
     print("INF141 Group 42 Inverted Index Query Processing!")
     query = input("Enter a query: ")
 
-    # should we also stem query?
-    queryTokens = tokenize(query) # tokenize query and put into list
-    setOfQueryTokens = set(queryTokens) # eliminate duplicate words in query
 
-    # give initial/sentinel value in set so it isn't empty? (struggling here) 
-    # problem: dont want to do and (intersection) with empty set
-    # another problem: if we have set {0} and set {1, 4, 6} at 
+    # should we also stem query? YES
+    # query tokens are stemmed to match the porter-stemmed-index
+    stemmer = PorterStemmer()
+    query_tokens = [stemmer.stem(tok) for tok in tokenize(query)]
+
+    # 1. give initial/sentinel value in set so it isn't empty? (struggling here) 
+    # 2. problem: dont want to do and (intersection) with empty set
+    # 3. another problem: if we have set {0} and set {1, 4, 6} at 
     # the start for example, and'ing them will be empty set, which will be a problem
     # in later iterations of for loop of finding word in index
    
-    setOfDocs = {0} # hold all doc IDs in setOfDocs
-    setToMerge = {} # to be figured out, will this be needed?
+    # setOfDocs = {0} # hold all doc IDs in setOfDocs
+    # setToMerge = {} # to be figured out, will this be needed?
 
-    with open("../inverted_index.json", 'r') as f:
-        wordIndex = json.load(f)
+    """ 
+    shawn: I decided to take a different approach that avoids the issues listed above. with doc_sets, no
+    assumptions need to be made with the inital values (false positive results!)
+
+    with the original approach, "setOfDocs = setOfDocs & setToMerge" was ran every loop which is a logical error
+    that results in setOfDocs becoming empty immediately even if other query words appear in the same documents later.
+    doc_sets results that as it cumulatively collects all doc ids that appears in the index before doing any AND operations
+    """
+
+    """ 
+    doc_sets:
+        contains sets of files that contain the queries
+        for example:
+            if query = "cristina lopes"
+        doc_sets[0] contains a set of all doc ids with cristina in it
+        doc_sets[1] contains a set of all doc ids with lopes in it
+        solves issues 1-3
+    """
+    doc_sets = []
+
+
+    for token in query_tokens:
+        if token in inverted_index:
+            doc_ids = set(map(int, inverted_index[token].keys()))
+            doc_sets.append(doc_ids)
+        else:
+            print(f"No results found for token: '{token}'")
+            return
+
+    
+    # with open("../inverted_index.json", 'r') as f:
+    #     wordIndex = json.load(f)
         
-        for word in setOfQueryTokens:
-            if word in wordIndex:
-                # wordIndex.values() gets dict for docIDs to word frequency
-                # get the keys (docIDs) with .items()
-                setToMerge = (wordIndex.values()).items()
+    #     for word in setOfQueryTokens:
+    #         if word in wordIndex:
+    #             # wordIndex.values() gets dict for docIDs to word frequency
+    #             # get the keys (docIDs) with .items()
+    #             setToMerge = (wordIndex.values()).items()
 
-                # this line should work? if 6 words for example are found in the same document
-                # (ex, all 6 words appear in doc 4, 7, and 8), does this mean the set will never be empty?
-                setOfDocs = setOfDocs & setToMerge
+    #             # this line should work? if 6 words for example are found in the same document
+    #             # (ex, all 6 words appear in doc 4, 7, and 8), does this mean the set will never be empty?
+    #             setOfDocs = setOfDocs & setToMerge
 
-                # to be continued
+    #             # to be continued
 
 
-    if len(setOfDocs) == 0:
+     # perform AND across all doc sets
+    if doc_sets:
+        matching_docs = set.intersection(*doc_sets)
+    else:
+        matching_docs = set()
+
+    if not matching_docs:
         print("No results found.")
     else:
-        print("Top 5 results for ", query)
-        # show URLs somehow, hash docID to URL?
+        print(f"\nTop 5 results for '{query}':")
+        for i, doc_id in enumerate(sorted(matching_docs)[:5]):
+            print(f"{i + 1}. {id_to_doc[doc_id]}")
+
+
+
+main()
