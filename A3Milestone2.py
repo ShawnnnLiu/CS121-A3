@@ -1,5 +1,6 @@
 import json
 import re
+import math
 from nltk.stem import PorterStemmer
 
 def tokenize(text):
@@ -90,9 +91,41 @@ def main():
     if not matching_docs:
         print("No results found.")
     else:
+        #holds total score for all the matching docs
+        doc_scores = {}
+        N = len(doc_id_table)
+
+        #idf uses log formula from math library, if df is 0 it's set to 0 to avoid undefined result
+        for tok in query_tokens:
+            postings = inverted_index[tok]
+            df = len(postings)
+            idf = math.log(N / df) if df != 0 else 0
+
+            #iterates over documents with the current token
+            #checks if doc id is in matching docs to satisfy boolean AND condition
+            #increments doc scores w/ sum over query tokens
+            for did_str, tf in postings.items():
+                did = int(did_str)
+                if did in matching_docs:
+                    score = tf * idf
+                    doc_scores[did] = doc_scores.get(did, 0) + score
+
+        #tuple contains a primary sort key, and a secondary key for tiebreakers (in cases of matching scores)
+        #doc_id order is reversed since we prefer lower numbered documents when scores are the same
+        score_tuples = []
+        for doc_id, score in doc_scores.items():
+            score_tuples.append((score, -doc_id))
+
+        #sort in descending order w/ highest score first, then ascending doc id, giving only the top 5
+        score_tuples.sort(reverse=True)
+        top5 = score_tuples[:5]
+
+        #modified printing to use tf-idf metric
         print(f"\nTop 5 results for '{query}':")
-        for i, doc_id in enumerate(sorted(matching_docs)[:5]):
-            print(f"{i + 1}. {id_to_doc[doc_id]}")
+        for i, tup in enumerate(top5, 1):
+            doc_id = -tup[1]
+            score = tup[0]
+            print(f"{i}. {id_to_doc[doc_id]} (tf-idf={score:.4f})")
 
 
 
