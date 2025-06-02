@@ -1,0 +1,39 @@
+computer science
+information retrieval
+cristina lopes
+machine learning
+ACM
+web crawler
+data structures
+porterstemmer
+ICS courses
+boolean logic
+master of software engineering
+the fundamentals
+ICS Home Page
+URL indexing
+submit assignment
+running
+html parser
+to be or not to be
+shawn lopes
+ICS WebCrawler
+list of faculty in computer science department
+UC Irvine ICS 141 lecture notes
+Hyperdimensional computing HDC applications
+joint training VAE EBM divergence triangle
+Le Cercle Rouge scene analysis editing mise-en-scène
+Jean-Luc Godard Breathless cinematography sound design
+HTML AND JSON parsing library
+Shannon entropy Wordle solver endgame
+Python Decorators class limitations
+L2 normalization vector length scikit-learn
+Wayback Machine ICS crawler 2020
+tokenization stemming punctuation issues
+python3.10 conda SciPy numpy compatibility
+epub PDF ICS web pages analytics
+I need detailed information about the graduate admissions requirements for the UC Irvine School of Information and Computer Sciences PhD program including prerequisites, application deadlines, required test scores, and funding
+Show me research publications and faculty in the Human–Computer Interaction group at ICS, including recent conference papers, journals, lab websites, and PhD student thesis titles from the last two years
+I am looking for the procedure to request an override into a full ICS course, including the department contact email, form submission guidelines, committee approval process, and any deadlines
+Provide me with the information about the ICS faculty office hours during finals week for spring 2025, including any remote Zoom sessions, in-person locations, and alternate meeting times
+Each problem will have a stated point value, and the total points for an exercise set will be weighted to 2% of your overall course grade, as stated in the Course Reference, even if the point value for one exercise set is different from another; the sets are all equally weighted, ultimately
