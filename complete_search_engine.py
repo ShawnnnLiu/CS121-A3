@@ -43,7 +43,8 @@ def single_query(query, inverted_index, id_to_doc, pagerank, doc_url_table, N):
     matching_docs = set.intersection(*doc_sets) if doc_sets else set()
     if not matching_docs:
         return []
-    # compute TF‐IDF scores
+
+    # compute TF‐IDF scores per doc
     tfidf_scores = {}
     for tok in query_tokens:
         postings = inverted_index[tok]
@@ -53,23 +54,26 @@ def single_query(query, inverted_index, id_to_doc, pagerank, doc_url_table, N):
             did = int(did_str)
             if did in matching_docs:
                 tfidf_scores[did] = tfidf_scores.get(did, 0.0) + tf * idf
-    # combine TF‐IDF and PageRank for each matching doc
-    combined_scores = {}
-    for did, tfidf_score in tfidf_scores.items():
-        pr_score = pagerank.get(did, 0.0)
-        combined_scores[did] = 0.7 * tfidf_score + 0.3 * pr_score
-    # sort by (combined score desc, doc_id asc) and take top 5
-    scored = [(score, -did) for did, score in combined_scores.items()]
-    scored.sort(reverse=True)
-    top5 = scored[:5]
-    # Return (filepath, url, score)
+
+    # scale PageRank so its maximum among matching_docs equals max TF‐IDF
+    max_tfidf = max(tfidf_scores.values())
+    pr_scores_subset = {did: pagerank.get(did, 0.0) for did in matching_docs}
+    max_pr = max(pr_scores_subset.values()) if pr_scores_subset else 0.0
+    scale_factor = (max_tfidf / max_pr) if max_pr > 0 else 1.0
+
+    # combine TF‐IDF and scaled PageRank for each matching doc
     results = []
-    for score, neg_did in top5:
-        did = -neg_did
+    for did, tfidf_score in tfidf_scores.items():
+        pr_raw = pagerank.get(did, 0.0)
+        pr_scaled = pr_raw * scale_factor
+        combined_score = 0.7 * tfidf_score + 0.3 * pr_scaled
         filepath = id_to_doc.get(did, "")
         url = doc_url_table.get(did, "")
-        results.append((filepath, url, score))
-    return results
+        results.append((filepath, url, tfidf_score, pr_scaled, combined_score))
+
+    # sort by (combined score desc, doc_id asc) and take top 5
+    results.sort(key=lambda x: (-x[4], x[0]))
+    return results[:5]
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -160,7 +164,7 @@ def get_template():
           .url-link:hover {
             text-decoration: underline;
           }
-          .score {
+          .score-detail {
             color: #333;
             font-size: 14px;
           }
@@ -180,11 +184,15 @@ def get_template():
             <h2>Results:</h2>
             {% if results %}
               <ol>
-              {% for filepath, url, score in results %}
+              {% for filepath, url, tfidf_score, pr_scaled, combined in results %}
                 <li>
                   <div class="filepath">Path: {{ filepath }}</div>
                   <div><a href="{{ url }}" class="url-link" target="_blank">{{ url }}</a></div>
-                  <div class="score">Score: {{ "%.4f"|format(score) }}</div>
+                  <div class="score-detail">
+                    TF-IDF: {{ "%.4f"|format(tfidf_score) }}<br>
+                    PageRank (scaled): {{ "%.4f"|format(pr_scaled) }}<br>
+                    <strong>Combined: {{ "%.4f"|format(combined) }}</strong>
+                  </div>
                 </li>
               {% endfor %}
               </ol>
