@@ -29,7 +29,7 @@ def load_doc_id_table(path="doc_id_table.json"):
 def build_link_graph(doc_id_table, dev_dir="DEV"):
     """
     Parse every document in DEV/, extract <a href="..."> links, map to doc IDs,
-    and build an adjacency list: doc_id → set(outgoing doc_ids).
+    and build an adjacency list: doc_id -> set(outgoing doc_ids).
     """
     # Build URL → doc_id from doc_id_table
     url_to_doc = {}
@@ -70,8 +70,8 @@ def build_link_graph(doc_id_table, dev_dir="DEV"):
 def compute_pagerank(adjacency, num_docs):
     """
     Compute PageRank over num_docs pages using adjacency list.
-    adjacency: dict(doc_id → set(outgoing doc_ids))
-    Returns: dict(doc_id → pagerank score)
+    adjacency: dict(doc_id -> set(outgoing doc_ids))
+    Returns: dict(doc_id -> pagerank score)
     """
     # Precompute out-degree for each page
     outdeg = {i: len(adjacency.get(i, set())) for i in range(num_docs)}

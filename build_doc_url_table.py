@@ -3,7 +3,7 @@ build_doc_url_table.py
 
 Reads `doc_id_table.json` to get each document’s relative path (under DEV/),
 opens each JSON in DEV/, extracts its "url" field, and writes a new
-`doc_url_table.json` mapping doc_id → URL.
+`doc_url_table.json` mapping doc_id -> URL.
 
 
 Assumes:
@@ -16,7 +16,7 @@ import json
 import os
 
 def load_doc_id_table(path="doc_id_table.json"):
-    """Load mapping: filepath (relative to DEV/) → doc_id (int)."""
+    """Load mapping: filepath (relative to DEV/) -> doc_id (int)."""
     with open(path, "r") as f:
         return json.load(f)
 
